@@ -22,7 +22,7 @@
 
         uiLayerShade :'ui-layer-shade', //遮罩 层
         //Tips
-        uiLayerTipsG:'layui-layer-TipsG',
+        uiLayerTipsG:'ui-layer-TipsG',
 
         //属性层字符串 一般不更改
         uiLayerBorder:'ui-layer-border',
@@ -329,6 +329,7 @@
             that.offsetTop = config.offset[0];
             that.offsetLeft = config.offset[1]||that.offsetLeft;
         } else if(config.offset !== 'auto'){
+            //可以不要
             that.offsetTop = config.offset;
             if(config.offset === 'rb'){ //右下角
                 that.offsetTop = win.height() - area[1];
@@ -348,6 +349,73 @@
         layero.css({top: that.offsetTop, left: that.offsetLeft});
     };
 
+//Tips
+    Kernel.pt.tips = function(){
+        var that = this, config = that.config, layero = that.layero;
+        var layArea = [layero.outerWidth(), layero.outerHeight()], follow = $(config.follow);
+        if(!follow[0]) follow = $('body');
+        var goal = {
+            width: follow.outerWidth(),
+            height: follow.outerHeight(),
+            top: follow.offset().top,
+            left: follow.offset().left
+        }, tipsG = layero.find('.'+LAYER_DOMS.uiLayerTipsG);
+
+        var guide = config.tips[0];
+        //如果 tips[1] 不存在 表示没有箭头下标
+        config.tips[1] || tipsG.remove();
+
+        goal.autoLeft = function(){
+            // 如果 目标的 left 坐标 + tips 层的宽度 超过了 屏幕宽度
+            if(goal.left + layArea[0] - win.width() > 0){
+
+                goal.tipLeft = goal.left + goal.width - layArea[0];
+                tipsG.css({right: 12, left: 'auto'});
+            } else {
+                goal.tipLeft = goal.left;
+            }
+        };
+
+        //辨别tips的方位
+        goal.where = [function(){ //上
+            goal.autoLeft();
+            goal.tipTop = goal.top - layArea[1] - 10;
+            tipsG.removeClass('layui-layer-TipsB').addClass('layui-layer-TipsT').css('border-right-color', config.tips[1]);
+        }, function(){ //右
+            goal.tipLeft = goal.left + goal.width + 10;
+            goal.tipTop = goal.top;
+            tipsG.removeClass('layui-layer-TipsL').addClass('layui-layer-TipsR').css('border-bottom-color', config.tips[1]);
+        }, function(){ //下
+            goal.autoLeft();
+            goal.tipTop = goal.top + goal.height + 10;
+            tipsG.removeClass('layui-layer-TipsT').addClass('layui-layer-TipsB').css('border-right-color', config.tips[1]);
+        }, function(){ //左
+            goal.tipLeft = goal.left - layArea[0] - 10;
+            goal.tipTop = goal.top;
+            tipsG.removeClass('layui-layer-TipsR').addClass('layui-layer-TipsL').css('border-bottom-color', config.tips[1]);
+        }];
+        goal.where[guide]();
+
+        /* 8*2为小三角形占据的空间 */
+        if(guide === 0){
+            goal.top - (win.scrollTop() + layArea[1] + 8*2) < 0 && goal.where[2]();
+        } else if(guide === 1){
+            win.width() - (goal.left + goal.width + layArea[0] + 8*2) > 0 || goal.where[3]()
+        } else if(guide === 2){
+            (goal.top - win.scrollTop() + goal.height + layArea[1] + 8*2) - win.height() > 0 && goal.where[0]();
+        } else if(guide === 3){
+            layArea[0] + 8*2 - goal.left > 0 && goal.where[1]()
+        }
+
+        layero.find('.'+doms[5]).css({
+            'background-color': config.tips[1],
+            'padding-right': (config.closeBtn ? '30px' : '')
+        });
+        layero.css({left: goal.tipLeft, top: goal.tipTop});
+    }
+
+
+    /** 内置成员 */
     window.layer = layer;
 
 
