@@ -425,7 +425,7 @@ Class.pt.tips = function(){
         'padding-right': (config.closeBtn ? '30px' : '')
     });
     layero.css({left: goal.tipLeft, top: goal.tipTop});
-}
+};
 
 //拖拽层
 Class.pt.move = function(){
