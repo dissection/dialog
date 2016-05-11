@@ -34,7 +34,9 @@
         uiLayerMin:'ui-layer-min',
         uiLayerMax:'ui-layer-max',
 
-        uiLayerWrap:'layui-layer-wrap'
+        uiLayerWrap:'layui-layer-wrap',
+        //拖拽移动
+        uiLayerMoves:'ui-layer-moves'
 
 
     },
@@ -322,18 +324,23 @@
         var type = typeof config.offset === 'object';
         that.offsetTop = (win.height() - area[1])/2;
         that.offsetLeft = (win.width() - area[0])/2;
+        //如果 offset 是一个对象 ,则直接使用
+
         if(type){   
             that.offsetTop = config.offset[0];
             that.offsetLeft = config.offset[1]||that.offsetLeft;
-        } else if(config.offset !== 'auto'){
-            //可以不要
+        } else if(config.offset !== 'auto'){  //如果字符串 不是 auto , 那么 offset 字符串 必然是 高度
+
             that.offsetTop = config.offset;
-            if(config.offset === 'rb'){ //右下角
+            // 在这个情况里 有表示 'rb' 表示 右下角
+            if(config.offset === 'rb'){
                 that.offsetTop = win.height() - area[1];
                 that.offsetLeft = win.width() - area[0];
             }
         }
+        //如果不是 锁定在 固定区域
         if(!config.fix){
+            //如果是 % , 如果是 百分比
             that.offsetTop = /%$/.test(that.offsetTop) ?
             win.height()*parseFloat(that.offsetTop)/100
                 : parseFloat(that.offsetTop);
@@ -439,10 +446,11 @@
             conf.ismove = true;
             conf.layero = $(this).parents('.'+ LAYER_DOMS.uiLayer);
             var xx = conf.layero.offset().left, yy = conf.layero.offset().top, ww = conf.layero.outerWidth() - 6, hh = conf.layero.outerHeight() - 6;
-            if(!$('#ui-layer-moves')[0]){
-                $('body').append('<div id="ui-layer-moves" class="ui-layer-moves" style="left:'+ xx +'px; top:'+ yy +'px; width:'+ ww +'px; height:'+ hh +'px; z-index:2147483584"></div>');
+            if(!$('#'+LAYER_DOMS.uiLayerMoves)[0]){
+                $('body').append('<div id="'+LAYER_DOMS.uiLayerMoves+'" class="'+LAYER_DOMS.uiLayerMoves+'" style="left:'+ xx +'px; top:'+ yy +'px; width:'+ ww +'px; height:'+ hh +'px; z-index:2147483584"></div>');
             }
-            conf.move = $('#ui-layer-moves');
+            //移动 虚影移动的元素
+            conf.move = $('#'+LAYER_DOMS.uiLayerMoves);
             config.moveType && conf.move.css({visibility: 'hidden'});
                 
             conf.moveX = M.pageX - conf.move.position().left;
@@ -450,7 +458,10 @@
             conf.layero.css('position') !== 'fixed' || (conf.setY = win.scrollTop());
         }
     });
-
+    /*思路
+    * 虚影div 的 left  和 top ,
+    * 如果有虚影 ： 在移动中显示 虚影，在抬起鼠标的时候 将虚影 的 left 和 top 赋值给 层
+    * 如果没有虚影 ： 在移动中 执行 赋值 left  和  top  函数 */
     $(document).mousemove(function(M){
         if(conf.ismove){
             var offsetX = M.pageX - conf.moveX, offsetY = M.pageY - conf.moveY;
@@ -468,7 +479,7 @@
 
             conf.move.css({left: offsetX, top: offsetY});
             config.moveType && conf.moveLayer();
-
+            // ？？？？？
             offsetX = offsetY = setRig = setTop = null;
         }
     }).mouseup(function(){
@@ -476,6 +487,7 @@
             if(conf.ismove){
                 conf.moveLayer();
                 conf.move.remove();
+                //当移动结束 离开这个元素触发
                 config.moveEnd && config.moveEnd();
             }
             conf.ismove = false;
@@ -486,10 +498,13 @@
     return that;
 };
 
+//当层创建完毕的时候 回到函数
     Kernel.pt.callback = function(){
         var that = this, layero = that.layero, config = that.config;
         that.openLayer();
+        // 如果 success 存在
         if(config.success){
+            //如果 类型 type  是 iframe
             if(config.type == 2){
                 layero.find('iframe').on('load', function(){
                     config.success(layero, that.index);
@@ -498,6 +513,7 @@
                 config.success(layero, that.index);
             }
         }
+        //如果是 ie6  select 需要做隐藏处理 【兼容处理】
         layer.ie6 && that.IE6(layero);
 
         //按钮
@@ -524,7 +540,7 @@
 
         //点遮罩关闭
         if(config.shadeClose){
-            $('#layui-layer-shade'+ that.index).on('click', function(){
+            $('#'+ LAYER_DOMS.uiLayerShade+ that.index).on('click', function(){
                 layer.close(that.index);
             });
         }
@@ -562,7 +578,7 @@
         //隐藏select
         $('select').each(function(index , value){
             var sthis = $(this);
-            if(!sthis.parents('.'+doms[0])[0]){
+            if(!sthis.parents('.'+LAYER_DOMS.uiLayer)[0]){
                 sthis.css('display') === 'none' || sthis.attr({'layer' : '1'}).hide();
             }
             sthis = null;
@@ -584,6 +600,28 @@
             layero.on('mousedown', setZindex);
             return layer.zIndex;
         };
+    };
+
+    ready.record = function(layero){
+        var area = [
+            layero.outerWidth(),
+            layero.outerHeight(),
+            layero.position().top,
+            layero.position().left + parseFloat(layero.css('margin-left'))
+        ];
+        layero.find('.layui-layer-max').addClass('layui-layer-maxmin');
+        layero.attr({area: area});
+    };
+
+    ready.rescollbar = function(index){
+        if(doms.html.attr('layer-full') == index){
+            if(doms.html[0].style.removeProperty){
+                doms.html[0].style.removeProperty('overflow');
+            } else {
+                doms.html[0].style.removeAttribute('overflow');
+            }
+            doms.html.removeAttr('layer-full');
+        }
     };
 
     /** 内置成员 */
@@ -640,7 +678,7 @@
             return o.index;
         };
     };
-    console.log(ready.run)
+    console.log(ready.run);
     ready.run();
 
 }(window);
