@@ -7,7 +7,7 @@
     var $, win,ready={
         btn: ['&#x786E;&#x5B9A;','&#x53D6;&#x6D88;'],
         //五种原始层模式
-        type: ['dialog', 'page', 'iframe', 'loading', 'tips'],
+        type: ['dialog', 'page', 'iframe', 'loading', 'tips']
     };
     //缓存常用字符
     var LAYER_DOMS={
@@ -33,12 +33,11 @@
         uiLayerSetwin:'ui-layer-setwin',
         uiLayerMin:'ui-layer-min',
         uiLayerMax:'ui-layer-max',
+        uiLayerMaxmin:'layui-layer-maxmin',
 
         uiLayerWrap:'layui-layer-wrap',
         //拖拽移动
         uiLayerMoves:'ui-layer-moves'
-
-
     },
     LAYER_ANIM= ['layui-anim', 'layui-anim-01', 'layui-anim-02', 'layui-anim-03', 'layui-anim-04', 'layui-anim-05', 'layui-anim-06'];
     var layer={
@@ -75,13 +74,13 @@
         },
 
         msg: function(content, options, end){ //最常用提示层
-            var type = typeof options === 'function', rskin = ready.config.skin;
-            var skin = (rskin ? rskin + ' ' + rskin + '-msg' : '')||'layui-layer-msg';
-            var shift = doms.anim.length - 1;
+            var type = typeof options === 'function'/*, rskin = ready.config.skin;*/
+            var skin = 'ui-layer-msg';
+            // var shift = doms.anim.length - 1;
             if(type) end = options;
             return layer.open($.extend({
                 content: content,
-                time: 3000,
+                time: 30000,
                 shade: false,
                 skin: skin,
                 title: false,
@@ -93,8 +92,8 @@
                 shift: shift
             } : function(){
                 options = options || {};
-                if(options.icon === -1 || options.icon === undefined && !ready.config.skin){
-                    options.skin = skin + ' ' + (options.skin||'layui-layer-hui');
+                if(options.icon === -1 || options.icon === undefined /*&& !ready.config.skin*/){
+                    options.skin = skin + ' ' + (options.skin||'ui-layer-hui');
                 }
                 return options;
             }()));
@@ -546,14 +545,14 @@
         }
 
         //最小化
-        layero.find('.layui-layer-min').on('click', function(){
+        layero.find('.'+LAYER_DOMS.uiLayerMin).on('click', function(){
             layer.min(that.index, config);
             config.min && config.min(layero);
         });
 
         //全屏/还原
-        layero.find('.layui-layer-max').on('click', function(){
-            if($(this).hasClass('layui-layer-maxmin')){
+        layero.find('.'+LAYER_DOMS.uiLayerMax).on('click', function(){
+            if($(this).hasClass(LAYER_DOMS.uiLayerMaxmin)){
                 layer.restore(that.index);
                 config.restore && config.restore(layero);
             } else {
@@ -563,6 +562,17 @@
         });
 
         config.end && (ready.end[that.index] = config.end);
+    };
+
+    //for ie6 恢复select
+    ready.reselect = function(){
+        $.each($('select'), function(index , value){
+            var sthis = $(this);
+            if(!sthis.parents('.'+ LAYER_DOMS.uiLayer)[0]){
+                (sthis.attr('layer') == 1 && $('.'+ LAYER_DOMS.uiLayer).length < 1) && sthis.removeAttr('layer').show();
+            }
+            sthis = null;
+        });
     };
 
     Kernel.pt.IE6 = function(layero){
@@ -575,7 +585,7 @@
         ie6Fix();
         win.scroll(ie6Fix);
 
-        //隐藏select
+        //处理 ie6 隐藏select
         $('select').each(function(index , value){
             var sthis = $(this);
             if(!sthis.parents('.'+LAYER_DOMS.uiLayer)[0]){
@@ -609,25 +619,118 @@
             layero.position().top,
             layero.position().left + parseFloat(layero.css('margin-left'))
         ];
-        layero.find('.layui-layer-max').addClass('layui-layer-maxmin');
+        layero.find('.'+ LAYER_DOMS.uiLayerMax).addClass('.'+ LAYER_DOMS.uiLayerMaxmin);
         layero.attr({area: area});
     };
-
+    // 当全屏的时候 添加 限制高度
     ready.rescollbar = function(index){
-        if(doms.html.attr('layer-full') == index){
-            if(doms.html[0].style.removeProperty){
-                doms.html[0].style.removeProperty('overflow');
+        if(LAYER_DOMS.html.attr('layer-full') == index){
+            if(LAYER_DOMS.html[0].style.removeProperty){
+                LAYER_DOMS.html[0].style.removeProperty('overflow');
             } else {
-                doms.html[0].style.removeAttribute('overflow');
+                LAYER_DOMS.html[0].style.removeAttribute('overflow');
             }
-            doms.html.removeAttr('layer-full');
+            LAYER_DOMS.html.removeAttr('layer-full');
         }
     };
 
     /** 内置成员 */
     window.layer = layer;
 
+    //获取子iframe的DOM
+    layer.getChildFrame = function(selector, index){
+        index = index || $('.'+LAYER_DOMS.uilayerIframe).attr('times');
+        return $('#'+ LAYER_DOMS.uiLayer + index).find('iframe').contents().find(selector);
+    };
 
+    //得到当前iframe层的索引，子iframe时使用
+    layer.getFrameIndex = function(name){
+        return $('#'+ name).parents('.'+LAYER_DOMS.uilayerIframe).attr('times');
+    };
+
+    //iframe层自适应宽高
+    layer.iframeAuto = function(index){
+        if(!index) return;
+        var heg = layer.getChildFrame('html', index).outerHeight();
+        var layero = $('#'+ LAYER_DOMS.uiLayer + index);
+        var titHeight = layero.find(LAYER_DOMS.uilayerTitle).outerHeight() || 0;
+        var btnHeight = layero.find('.'+LAYER_DOMS.uilayerBtn).outerHeight() || 0;
+        layero.css({height: heg + titHeight + btnHeight});
+        layero.find('iframe').css({height: heg});
+    };
+
+    //重置iframe url
+    layer.iframeSrc = function(index, url){
+        $('#'+ LAYER_DOMS.uiLayer + index).find('iframe').attr('src', url);
+    };
+
+    //设定层的样式
+    layer.style = function(index, options){
+        var layero = $('#'+ LAYER_DOMS.uiLayer + index), type = layero.attr('type');
+        var titHeight = layero.find(LAYER_DOMS.uilayerTitle).outerHeight() || 0;
+        var btnHeight = layero.find('.'+LAYER_DOMS.uilayerBtn).outerHeight() || 0;
+        if(type === ready.type[1] || type === ready.type[2]){
+            layero.css(options);
+            if(type === ready.type[2]){
+                layero.find('iframe').css({
+                    height: parseFloat(options.height) - titHeight - btnHeight
+                });
+            }
+        }
+    };
+
+    //最小化
+    layer.min = function(index, options){
+        var layero = $('#'+ LAYER_DOMS.uiLayer + index);
+        var titHeight = layero.find('.'+LAYER_DOMS.uilayerTitle).outerHeight() || 0;
+        ready.record(layero);
+        layer.style(index, {width: 180, height: titHeight, overflow: 'hidden'});
+        layero.find('.'+LAYER_DOMS.uiLayerMin).hide();
+        layero.attr('type') === 'page' && layero.find(LAYER_DOMS.uilayerIframe).hide();
+        ready.rescollbar(index);
+    };
+//还原
+    layer.restore = function(index){
+        var layero = $('#'+ LAYER_DOMS.uiLayer + index), area = layero.attr('area').split(',');
+        var type = layero.attr('type');
+        layer.style(index, {
+            width: parseFloat(area[0]),
+            height: parseFloat(area[1]),
+            top: parseFloat(area[2]),
+            left: parseFloat(area[3]),
+            overflow: 'visible'
+        });
+        layero.find('.'+LAYER_DOMS.uiLayerMin).removeClass(LAYER_DOMS.uiLayerMaxmin);
+        layero.find('.'+LAYER_DOMS.uiLayerMin).show();
+        layero.attr('type') === 'page' && layero.find(LAYER_DOMS.uilayerIframe).show();
+        ready.rescollbar(index);
+    };
+//全屏
+    layer.full = function(index){
+        var layero = $('#'+ doms[0] + index), timer;
+        ready.record(layero);
+        if(!doms.html.attr('layer-full')){
+            doms.html.css('overflow','hidden').attr('layer-full', index);
+        }
+        clearTimeout(timer);
+        timer = setTimeout(function(){
+            var isfix = layero.css('position') === 'fixed';
+            layer.style(index, {
+                top: isfix ? 0 : win.scrollTop(),
+                left: isfix ? 0 : win.scrollLeft(),
+                width: win.width(),
+                height: win.height()
+            });
+            layero.find('.layui-layer-min').hide();
+        }, 100);
+    };
+
+//改变title
+    layer.title = function(name, index){
+        var title = $('#'+ LAYER_DOMS.uiLayer + (index||layer.index)).find('.'+LAYER_DOMS.uilayerTitle);
+        title.html(name);
+    };
+    
 //关闭layer总方法
     layer.close = function(index){
         var layero = $('#'+ LAYER_DOMS.uiLayer + index), type = layero.attr('type');
