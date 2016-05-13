@@ -707,10 +707,10 @@
     };
 //全屏
     layer.full = function(index){
-        var layero = $('#'+ doms[0] + index), timer;
+        var layero = $('#'+ LAYER_DOMS.uiLayer + index), timer;
         ready.record(layero);
-        if(!doms.html.attr('layer-full')){
-            doms.html.css('overflow','hidden').attr('layer-full', index);
+        if(!LAYER_DOMS.html.attr('layer-full')){
+            LAYER_DOMS.html.css('overflow','hidden').attr('layer-full', index);
         }
         clearTimeout(timer);
         timer = setTimeout(function(){
