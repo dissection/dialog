@@ -759,6 +759,8 @@ layer.close = function(index){
     layer.ie6 && ready.reselect();
     ready.rescollbar(index);
     $(document).off('keydown', ready.enter);
+    console.log(ready.end)
+    console.log(index)
     typeof ready.end[index] === 'function' && ready.end[index]();
     delete ready.end[index]; 
 };

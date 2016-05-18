@@ -5,6 +5,7 @@
 ;!function (window, undefined) {
     //准备对象
     var $, win,ready={
+        config: {}, end: {},
         btn: ['&#x786E;&#x5B9A;','&#x53D6;&#x6D88;'],
         //五种原始层模式
         type: ['dialog', 'page', 'iframe', 'loading', 'tips']
@@ -19,10 +20,19 @@
         uilayerContent:'ui-layer-content',
         uilayerBtn:'ui-layer-btn',
         uilayerClose:'ui-layer-close',
+        uilayerMsg:'ui-layer-msg',
+
+        uilayerHui:' layui-layer-hui', //msg 的灰色
 
         uiLayerShade :'ui-layer-shade', //遮罩 层
         //Tips
         uiLayerTipsG:'ui-layer-TipsG',
+        uilayerTipsT:'ui-layer-TipsT',
+        uilayerTipsR:'ui-layer-TipsR',
+        uilayerTipsB:'ui-layer-TipsB',
+        uilayerTipsL:'ui-layer-TipsL',
+
+
 
         //属性层字符串 一般不更改
         uiLayerBorder:'ui-layer-border',
@@ -45,10 +55,6 @@
         ie6: !!window.ActiveXObject && !window.XMLHttpRequest,
         ie7: /MSIE 7/.test(navigator.userAgent),
         index:0,
-        // path:
-        consfig:function () {
-            
-        },
         //各种快捷引用
         alert: function(content, options, yes){
             var type = typeof options === 'function';
@@ -74,26 +80,26 @@
         },
 
         msg: function(content, options, end){ //最常用提示层
-            var type = typeof options === 'function'/*, rskin = ready.config.skin;*/
-            var skin = 'ui-layer-msg';
-            // var shift = doms.anim.length - 1;
+            var type = typeof options === 'function';
+            var skin = LAYER_DOMS.uilayerMsg;
+            //动画
+            var shift = LAYER_ANIM.length - 1;
             if(type) end = options;
             return layer.open($.extend({
                 content: content,
                 time: 30000,
                 shade: false,
-                skin: skin,
                 title: false,
                 closeBtn: false,
                 btn: false,
                 end: end
-            }, (type && !ready.config.skin) ? {
-                skin: skin + ' layui-layer-hui',
+            }, (type) ? {
+                skin: skin + ' '+LAYER_DOMS.uilayerHui ,
                 shift: shift
             } : function(){
                 options = options || {};
-                if(options.icon === -1 || options.icon === undefined /*&& !ready.config.skin*/){
-                    options.skin = skin + ' ' + (options.skin||'ui-layer-hui');
+                if(options.icon === -1 || options.icon === undefined){
+                    options.skin = skin + ' ' + LAYER_DOMS.uilayerHui;
                 }
                 return options;
             }()));
@@ -112,7 +118,7 @@
                 type: 4,
                 content: [content, follow],
                 closeBtn: false,
-                time: 3000,
+                time: 3000000,
                 maxWidth: 210
             }, options));
         }
@@ -142,7 +148,7 @@
         shift: 0,
         icon: -1,
         scrollbar: true, //是否允许浏览器滚动条
-        tips: 2,
+        tips: 1,
         maxmin:!1,    //最大化最小化
         iframeUrl:'http://layer.layui.com'
     };
@@ -170,7 +176,7 @@
             config.shade ? ('<div class="'+LAYER_DOMS.uiLayerShade+'" id="'+LAYER_DOMS.uiLayerShade+ times +'" times="'+ times +'" style="'+ ('z-index:'+ (zIndex-1) +'; background-color:'+ (config.shade[1]||'#000') +'; opacity:'+ (config.shade[0]||config.shade) +'; filter:alpha(opacity='+ (config.shade[0]*100||config.shade*100) +');') +'"></div>') : '',
 
             //主体
-            '<div class="'+ LAYER_DOMS.uiLayer +' '+ (LAYER_ANIM[config.shift]||'') + (' ui-layer-'+ready.type[config.type]) + (((config.type == 0 || config.type == 2) && !config.shade) ? LAYER_DOMS.uiLayerBorder : '') + ' ' + (config.skin||'') +'" id="'+ LAYER_DOMS.uiLayer + times +'" type="'+ ready.type[config.type] +'" times="'+ times +'" showtime="'+ config.time +'" conType="'+ (conType ? 'object' : 'string') +'" style="z-index: '+ zIndex +'; width:'+ config.area[0] + ';height:' + config.area[1] + (config.fix ? '' : ';position:absolute;') +'">'
+            '<div class="'+ LAYER_DOMS.uiLayer +' '+ (LAYER_ANIM[config.shift]||'') + (' ui-layer-'+ready.type[config.type]) + ' '+(((config.type == 0 || config.type == 2) && !config.shade) ? LAYER_DOMS.uiLayerBorder : '') + ' ' + (config.skin||'') +'" id="'+ LAYER_DOMS.uiLayer + times +'" type="'+ ready.type[config.type] +'" times="'+ times +'" showtime="'+ config.time +'" conType="'+ (conType ? 'object' : 'string') +'" style="z-index: '+ zIndex +'; width:'+ config.area[0] + ';height:' + config.area[1] + (config.fix ? '' : ';position:absolute;') +'">'
             + (conType && config.type != 2 ? '' : titleHTML)
             +'<div class="'+ LAYER_DOMS.uilayerContent + ((config.type == 0 && config.icon !== -1) ? ' '+ LAYER_DOMS.uiLayerPadding : config.type == 3 ? ' '+LAYER_DOMS.uiLayerLoading +config.icon : '') +'">'
             + (config.type == 0 && config.icon !== -1 ? '<i class="'+LAYER_DOMS.uiLayerIco+' '+LAYER_DOMS.uiLayerIco+ config.icon +'"></i>' : '')
@@ -268,7 +274,7 @@
             });
         }
         //自动关闭的时间
-        config.time <= 0 || setTimeout(function(){
+        config.time < 0 || setTimeout(function(){
             layer.close(that.index)
         }, config.time);
         //关闭弹出层 并且 回调函数
@@ -384,19 +390,19 @@
         goal.where = [function(){ //上
             goal.autoLeft();
             goal.tipTop = goal.top - layArea[1] - 10;
-            tipsG.removeClass('layui-layer-TipsB').addClass('layui-layer-TipsT').css('border-right-color', config.tips[1]);
+            tipsG.removeClass(LAYER_DOMS.uilayerTipsB).addClass(LAYER_DOMS.uilayerTipsT).css('border-right-color', config.tips[1]);
         }, function(){ //右
             goal.tipLeft = goal.left + goal.width + 10;
             goal.tipTop = goal.top;
-            tipsG.removeClass('layui-layer-TipsL').addClass('layui-layer-TipsR').css('border-bottom-color', config.tips[1]);
+            tipsG.removeClass(LAYER_DOMS.uilayerTipsL).addClass(LAYER_DOMS.uilayerTipsR).css('border-bottom-color', config.tips[1]);
         }, function(){ //下
             goal.autoLeft();
             goal.tipTop = goal.top + goal.height + 10;
-            tipsG.removeClass('layui-layer-TipsT').addClass('layui-layer-TipsB').css('border-right-color', config.tips[1]);
+            tipsG.removeClass(LAYER_DOMS.uilayerTipsT).addClass(LAYER_DOMS.uilayerTipsB).css('border-right-color', config.tips[1]);
         }, function(){ //左
             goal.tipLeft = goal.left - layArea[0] - 10;
             goal.tipTop = goal.top;
-            tipsG.removeClass('layui-layer-TipsR').addClass('layui-layer-TipsL').css('border-bottom-color', config.tips[1]);
+            tipsG.removeClass(LAYER_DOMS.uilayerTipsR).addClass(LAYER_DOMS.uilayerTipsL).css('border-bottom-color', config.tips[1]);
         }];
         goal.where[guide]();
 
@@ -738,7 +744,7 @@
         if(type === ready.type[1] && layero.attr('conType') === 'object'){
             layero.children(':not(.'+ LAYER_DOMS.uilayerContent +')').remove();
             for(var i = 0; i < 2; i++){
-                layero.find('.layui-layer-wrap').unwrap().hide();
+                layero.find('.'+LAYER_DOMS.uiLayerWrap).unwrap().hide();
             }
         } else {
             //低版本IE 回收 iframe
@@ -753,10 +759,12 @@
             layero[0].innerHTML = '';
             layero.remove();
         }
-        $('#layui-layer-moves, #layui-layer-shade' + index).remove();
+        $('#'+LAYER_DOMS.uiLayerMoves +','+ '#'+ LAYER_DOMS.uiLayerShade + index).remove();
         layer.ie6 && ready.reselect();
         ready.rescollbar(index);
         $(document).off('keydown', ready.enter);
+
+        console.log(ready.end)
         typeof ready.end[index] === 'function' && ready.end[index]();
         delete ready.end[index];
     };

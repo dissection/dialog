@@ -7,19 +7,31 @@
     <link href="../src/layer.css" rel="stylesheet"/>
     <script src="../jquery.js"></script>
     <script src="../jQuery.dialog.js"></script>
+    <!--<script src="../layer.js"></script>-->
 
 </head>
-
+    <div id="t" style="width: 100px; height: 50px; background: red; margin: 130px auto">1111111</div>
+<!--<img src="../src/images/loading.svg">-->
 <body style="height: 2000px">
 
     <script>
          $(function () {
                /* layer.open({
                     moveType:1,
-                    fix:false
-                })*/
+                    content:"sss",
+                    fix:falsemsg
+                });*/
 
-             layer.msg("ssssss")
+//             layer.msg("ssssss")
+          /*  var a= layer.load("ssssss")
+
+            console.log(a)
+            setTimeout(function () {
+                layer.close(a)
+
+            },1e3)
+*/
+             layer.tips("sssssss","#t",{ tips: 0})
          })
     </script>
 </body>
